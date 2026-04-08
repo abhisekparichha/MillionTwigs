@@ -1,0 +1,125 @@
+# MillionTwigs Configuration
+# Edit this file before running the pipeline
+
+# ── Area of Interest ──────────────────────────────────────────────────────────
+aoi:
+  name: "My Study Area"
+  # Bounding box: [min_longitude, min_latitude, max_longitude, max_latitude]
+  # Example below: central Bengaluru urban forest region
+  bbox: [77.50, 12.85, 77.70, 13.05]
+  # Optional: path to a GeoJSON/Shapefile for precise AOI polygon
+  geojson_path: null   # e.g. "data/aoi.geojson"
+
+# ── Temporal Parameters ───────────────────────────────────────────────────────
+dates:
+  # Historical baseline — used as "past" reference for change detection
+  baseline:
+    start: "2016-01-01"
+    end:   "2016-12-31"
+    label: "2016"
+
+  # Current period — "present" state
+  current:
+    start: "2024-01-01"
+    end:   "2024-12-31"
+    label: "2024"
+
+# ── Imagery Source ────────────────────────────────────────────────────────────
+source:
+  # Options: "sentinel2" | "landsat8" | "landsat9" | "bhuvan_liss4" | "bhuvan_liss3"
+  primary: "sentinel2"
+  cloud_cover_max: 10          # % maximum cloud cover per scene
+  prefer_dry_season: true      # avoid monsoon months (India: June–Sept)
+
+# ── Satellite-specific settings ───────────────────────────────────────────────
+sentinel2:
+  collection: "COPERNICUS/S2_SR_HARMONIZED"   # Surface reflectance, GEE ID
+  bands:
+    blue:      "B2"
+    green:     "B3"
+    red:       "B4"
+    rededge1:  "B5"
+    rededge2:  "B6"
+    rededge3:  "B7"
+    nir:       "B8"
+    nir_narrow:"B8A"
+    swir1:     "B11"
+    swir2:     "B12"
+  scale_factor: 0.0001    # divide raw integer values by 10000
+
+landsat8:
+  collection: "LANDSAT/LC08/C02/T1_L2"
+  bands:
+    blue:   "SR_B2"
+    green:  "SR_B3"
+    red:    "SR_B4"
+    nir:    "SR_B5"
+    swir1:  "SR_B6"
+    swir2:  "SR_B7"
+  scale_factor: 0.0000275
+  offset: -0.2
+
+# ── Analysis Method ───────────────────────────────────────────────────────────
+analysis:
+  # Vegetation index to threshold for "vegetation presence"
+  primary_index: "ndvi"         # options: ndvi | evi | ndre | savi
+  vegetation_threshold: 0.35    # pixels above this are counted as vegetation
+
+  # Tree detection method
+  # "deepforest" requires ≤ 1m resolution imagery (Cartosat-3, Planet)
+  # "unet"       requires 5–10m imagery (LISS-IV, Sentinel-2)
+  # "rf"         works at 10–30m (Sentinel-2, Landsat) — Random Forest
+  # "index_only" uses NDVI thresholding + crown area estimation
+  tree_detection_method: "unet"
+
+  # Mean crown area (m²) per tree for the study region
+  # Used only when individual crowns cannot be resolved (medium-resolution imagery)
+  # Reference: Jucker et al. 2017, Global Change Biology
+  mean_crown_area_m2: 25   # adjust for your biome
+
+# ── U-Net Segmentation ────────────────────────────────────────────────────────
+unet:
+  encoder: "resnet50"           # ImageNet-pretrained encoder
+  pretrained_weights: "imagenet"
+  input_channels: 4             # RGB + NIR
+  patch_size: 256               # pixels per tile during inference
+  overlap: 64                   # overlap between tiles to avoid boundary effects
+  batch_size: 8
+  # Path to fine-tuned weights (null = use ImageNet init + threshold-based pseudo-labels)
+  checkpoint: null              # e.g. "models/unet_liss4_v1.pth"
+
+# ── DeepForest ────────────────────────────────────────────────────────────────
+deepforest:
+  use_release_weights: true     # use Weinstein et al. NEON pretrained weights
+  score_threshold: 0.4          # minimum detection confidence
+  patch_size: 400               # pixels per inference patch
+  patch_overlap: 0.05
+
+# ── Change Detection ──────────────────────────────────────────────────────────
+change_detection:
+  method: "cva"                 # options: "cva" | "pcc" | "landtrendr"
+  # Change Vector Analysis features
+  cva_features: ["ndvi", "evi", "nir", "swir1"]
+  # Threshold (standard deviations above mean magnitude = significant change)
+  magnitude_threshold_std: 1.5
+
+# ── Output ────────────────────────────────────────────────────────────────────
+output:
+  base_dir: "results"
+  save_intermediate: true       # save NDVI/EVI rasters, masks, etc.
+  generate_report: true
+  report_format: "pdf"          # options: "pdf" | "html"
+  export_geojson: true          # export detected tree crowns as GeoJSON
+
+# ── Paths ─────────────────────────────────────────────────────────────────────
+paths:
+  raw_data:    "data/raw"
+  processed:   "data/processed"
+  models:      "models"
+  results:     "results"
+
+# ── Credentials (use environment variables — do NOT hardcode secrets here) ────
+credentials:
+  gee_project: null             # set via GEE_PROJECT env var, or earthengine authenticate
+  # Bhuvan credentials: set BHUVAN_USER and BHUVAN_PASSWORD env vars
+  # Copernicus: set COPERNICUS_USER and COPERNICUS_PASSWORD env vars
