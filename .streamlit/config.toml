@@ -1,0 +1,16 @@
+# Streamlit Cloud / self-hosted configuration
+
+[theme]
+primaryColor       = "#2d7d46"
+backgroundColor    = "#ffffff"
+secondaryBackgroundColor = "#f0f7f0"
+textColor          = "#1a1a1a"
+font               = "sans serif"
+
+[server]
+headless           = true
+enableCORS         = false
+enableXsrfProtection = true
+
+[browser]
+gatherUsageStats   = false

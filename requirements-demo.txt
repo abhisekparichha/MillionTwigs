@@ -1,0 +1,13 @@
+# MillionTwigs — Demo / Web deployment requirements
+# Lightweight — no GDAL, no PyTorch, no rasterio needed for the Streamlit demo
+# Compatible with: Streamlit Cloud, Hugging Face Spaces, Render, Railway, Cloud Run
+
+streamlit>=1.33.0
+numpy>=1.26.4
+scipy>=1.12.0
+scikit-image>=0.22.0
+matplotlib>=3.8.4
+pandas>=2.2.1
+plotly>=5.20.0
+pyyaml>=6.0.1
+pillow>=10.3.0
