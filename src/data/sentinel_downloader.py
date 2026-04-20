@@ -40,14 +40,30 @@ def _require_sentinelsat() -> None:
 
 
 def _get_credentials() -> Tuple[str, str]:
-    user = os.environ.get("COPERNICUS_USER")
-    password = os.environ.get("COPERNICUS_PASSWORD")
-    if not user or not password:
-        raise EnvironmentError(
-            "Set COPERNICUS_USER and COPERNICUS_PASSWORD environment variables.\n"
-            "Register free at: https://dataspace.copernicus.eu/"
-        )
-    return user, password
+    """Load Copernicus credentials from environment / .env file.
+
+    Set these in your .env file (copy from .env.example):
+        COPERNICUS_USER=your_email@example.com
+        COPERNICUS_PASSWORD=your_password
+
+    Registration (free, instant): https://dataspace.copernicus.eu
+    See docs/credentials_guide.md §3 for full steps.
+    """
+    try:
+        from src.config.credentials import get_copernicus
+        creds = get_copernicus()
+        return creds.user, creds.password
+    except ImportError:
+        # Fallback: read directly from env (when src.config not on path)
+        user = os.environ.get("COPERNICUS_USER")
+        password = os.environ.get("COPERNICUS_PASSWORD")
+        if not user or not password:
+            raise EnvironmentError(
+                "Set COPERNICUS_USER and COPERNICUS_PASSWORD in your .env file.\n"
+                "Register free at: https://dataspace.copernicus.eu/\n"
+                "See: docs/credentials_guide.md §3"
+            )
+        return user, password
 
 
 def connect_api() -> "SentinelAPI":

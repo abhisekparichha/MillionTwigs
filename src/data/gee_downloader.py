@@ -15,6 +15,7 @@ Reference datasets:
 
 from __future__ import annotations
 
+import os
 import time
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -40,8 +41,24 @@ def initialize_gee(project: Optional[str] = None) -> None:
 
     Call once per session before any GEE operation.
     Run `earthengine authenticate` on first use to store credentials.
+
+    project is read from (in priority order):
+      1. the `project` argument
+      2. GEE_PROJECT environment variable (or .env file)
+      3. GOOGLE_CLOUD_PROJECT environment variable
+      4. None — GEE may still work if a default project is configured
+
+    See docs/credentials_guide.md §2 for registration steps.
     """
     _require_gee()
+
+    # Resolve project from env if not passed explicitly
+    if project is None:
+        project = (
+            os.environ.get("GEE_PROJECT")
+            or os.environ.get("GOOGLE_CLOUD_PROJECT")
+        )
+
     try:
         ee.Initialize(project=project)
     except Exception:
