@@ -32,10 +32,44 @@ Data Access Procedure (Manual):
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 import numpy as np
+
+
+def _get_bhuvan_credentials() -> tuple:
+    """Load ISRO Bhuvan credentials from environment / .env file.
+
+    Set these in your .env file (copy from .env.example):
+        BHUVAN_USER=your_registered_email
+        BHUVAN_PASSWORD=your_password
+
+    Registration (free, 1–3 working days): https://bhuvan-app1.nrsc.gov.in/mda/
+    See docs/credentials_guide.md §1A for full registration steps.
+
+    NOTE: Bhuvan does not provide a public REST API for bulk downloads.
+    These credentials are used for:
+      - WMS authenticated layer access
+      - Future API integration if NRSC opens programmatic access
+    For now, data download remains a manual portal workflow.
+    """
+    try:
+        from src.config.credentials import get_bhuvan
+        creds = get_bhuvan()
+        return creds.user, creds.password
+    except ImportError:
+        user = os.environ.get("BHUVAN_USER")
+        password = os.environ.get("BHUVAN_PASSWORD")
+        if not user or not password:
+            raise EnvironmentError(
+                "Set BHUVAN_USER and BHUVAN_PASSWORD in your .env file.\n"
+                "Register at: https://bhuvan-app1.nrsc.gov.in/mda/\n"
+                "Approval takes 1–3 working days.\n"
+                "See: docs/credentials_guide.md §1A"
+            )
+        return user, password
 
 try:
     import rasterio

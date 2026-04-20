@@ -4,6 +4,64 @@ Step-by-step registration for every satellite data source used in MillionTwigs.
 
 ---
 
+## Quick Setup (do this first)
+
+```bash
+# 1. Copy the template
+cp .env.example .env
+
+# 2. Open .env and fill in your credentials
+nano .env          # or use VS Code: code .env
+
+# 3. Verify all credentials are detected
+python -m src.config.credentials
+
+# 4. Install python-dotenv so .env loads automatically
+pip install python-dotenv
+```
+
+The checker will show exactly which credentials are set and which are missing:
+```
+MillionTwigs — Credential Status Check
+=============================================
+📄 .env file found
+
+  GEE_PROJECT              ✅ set
+  COPERNICUS_USER          ✅ set
+  COPERNICUS_PASSWORD      ✅ set
+  LANDSATXPLORE_USERNAME   ❌ missing
+  LANDSATXPLORE_PASSWORD   ❌ missing
+  EARTHDATA_USERNAME       ✅ set
+  EARTHDATA_PASSWORD       ✅ set
+  BHUVAN_USER              ❌ missing
+  BHUVAN_PASSWORD          ❌ missing
+```
+
+---
+
+## Where Each Credential Is Used in the Code
+
+| Environment Variable | Used in file | Purpose |
+|---|---|---|
+| `GEE_PROJECT` | `src/data/gee_downloader.py` → `initialize_gee()` | Sentinel-2, Landsat, GEDI, Hansen via GEE |
+| `COPERNICUS_USER` | `src/data/sentinel_downloader.py` → `_get_credentials()` | Direct Sentinel-2 download |
+| `COPERNICUS_PASSWORD` | `src/data/sentinel_downloader.py` → `_get_credentials()` | Direct Sentinel-2 download |
+| `LANDSATXPLORE_USERNAME` | `src/data/landsat_downloader.py` → `_get_credentials()` | Landsat search & download |
+| `LANDSATXPLORE_PASSWORD` | `src/data/landsat_downloader.py` → `_get_credentials()` | Landsat search & download |
+| `EARTHDATA_USERNAME` | `src/config/credentials.py` → `get_nasa()` | GEDI direct download |
+| `EARTHDATA_PASSWORD` | `src/config/credentials.py` → `get_nasa()` | GEDI direct download |
+| `BHUVAN_USER` | `src/data/bhuvan_downloader.py` → `_get_bhuvan_credentials()` | ISRO Bhuvan data |
+| `BHUVAN_PASSWORD` | `src/data/bhuvan_downloader.py` → `_get_bhuvan_credentials()` | ISRO Bhuvan data |
+
+All credentials flow through `src/config/credentials.py` which:
+- Loads `.env` automatically via python-dotenv
+- Validates each credential before use
+- Raises a `CredentialError` with the exact registration URL if anything is missing
+
+---
+
+---
+
 ## 1. ISRO Bhuvan / NRSC (India)
 
 ISRO data is spread across **three separate portals** — each requires its own account.
